@@ -127,14 +127,40 @@ POST   /api/restaurants/:id/service-notes
 ### ✅ Phase 0 — Fondations (terminée)
 Toute la structure monorepo, schéma BDD, tous les modules backend, toutes les vues frontend.
 
+### ✅ Correctifs post-Phase 0 (terminés)
+- Nom de famille et email non obligatoires dans la prise de réservation
+- Autocomplete client dans le modal réservation (recherche temps réel, clic pour pré-remplir)
+- Sélection de table(s) directement dans le modal de réservation
+- Taille des tables proportionnelle à la capacité (algo dans `frontend/src/utils/tableSize.ts`)
+
 ### 🔜 Phases suivantes (dans l'ordre)
-1. **Tests de bout en bout** — vérifier que tout fonctionne ensemble
-2. **Plan de salle enrichi** — redimensionnement tables, combinaison de tables, étiquettes personnalisées
-3. **Mode service live** — plan 2D coloré par statut en temps réel (Socket.io)
-4. **Notes de service** — interface sur le dashboard
-5. **Statistiques avancées** — taux d'occupation par table, graphiques
-6. **Notifications email** — confirmation client, rappel J-1
-7. **Widget réservation public** — formulaire embarquable sur site web
+
+#### Phase 1 — Plan de salle enrichi
+- **Rotation des tables** — poignée de rotation sur table sélectionnée (Konva Transformer)
+- **Dessin de la salle** — délimiter la forme de la salle en mode polygone (angles droits uniquement au début) ; les murs sont dessinés comme un polygone éditable point par point, stocké en JSON sur le modèle `Room` (`wallPolygon`)
+- Redimensionnement des tables (Konva Transformer)
+- Combinaison de tables (fusionner 2 tables adjacentes pour un grand groupe)
+
+#### Phase 2 — Mode service live
+- Plan 2D coloré par statut en temps réel
+- Affectation rapide d'une réservation à une table par clic sur le plan
+- Socket.io pour synchronisation multi-poste (plusieurs serveurs sur le même écran)
+
+#### Phase 3 — Dashboard & notes de service
+- Interface notes de service sur le dashboard
+- Résumé VIP + liste d'attente en évidence
+
+#### Phase 4 — Statistiques avancées
+- Taux d'occupation par table
+- Graphiques (couverts par semaine/mois)
+- Export CSV/PDF
+
+#### Phase 5 — Notifications email
+- Confirmation réservation au client
+- Rappel J-1
+
+#### Phase 6 — Widget réservation public *(futur)*
+- Formulaire embarquable sur site web du resto (iframe ou JS snippet)
 
 ## Conventions de code
 - Tous les commentaires et labels UI en **français**
