@@ -194,7 +194,7 @@ let searchTimer: ReturnType<typeof setTimeout>
 const rooms = computed(() => restaurantStore.current?.rooms ?? [])
 const busyTableIds = computed(() => {
   // Collect tableIds from bookings on the same date/period, excluding current booking
-  return bookingsStore.list
+  return (bookingsStore.list ?? [])
     .filter((b) =>
       b.id !== props.booking?.id &&
       dayjs(b.date).format('YYYY-MM-DD') === form.date &&
