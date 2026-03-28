@@ -43,4 +43,25 @@ export class UpdateBookingDto {
   @IsArray()
   @IsString({ each: true })
   tableIds?: string[];
+
+  // Champs client ignorés à l'update (envoyés par le frontend, non traités)
+  @IsOptional()
+  @IsString()
+  customerId?: string;
+
+  @IsOptional()
+  @IsString()
+  customerFirstName?: string;
+
+  @IsOptional()
+  @IsString()
+  customerLastName?: string;
+
+  @IsOptional()
+  @IsString()
+  customerPhone?: string;
+
+  @IsOptional()
+  @IsString()
+  customerEmail?: string;
 }
