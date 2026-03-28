@@ -34,7 +34,8 @@
         <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ajouter une table</div>
         <div>
           <label class="label">Nom</label>
-          <input v-model="newTable.name" type="text" class="input text-sm" placeholder="Table 1" />
+          <input v-model="newTable.name" type="text" class="input text-sm" placeholder="Table 1"
+            @input="addTableError = ''" />
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
@@ -50,6 +51,7 @@
             </select>
           </div>
         </div>
+        <p v-if="addTableError" class="text-xs text-red-400">{{ addTableError }}</p>
         <button @click="addTable" class="btn-primary w-full justify-center text-sm"
           :disabled="!selectedRoomId || !newTable.name">
           Ajouter
@@ -266,6 +268,7 @@ const saving = ref(false)
 const hasUnsavedChanges = ref(false)
 
 const newTable = ref({ name: '', capacity: 2, shape: 'RECTANGLE' as const })
+const addTableError = ref('')
 const pendingPositions = ref<Map<string, { x: number; y: number; rotation: number }>>(new Map())
 
 // Modale de suppression
@@ -346,6 +349,7 @@ function onDeleteKey() {
 
 async function addTable() {
   if (!selectedRoomId.value || !newTable.value.name) return
+  addTableError.value = ''
   try {
     const { width, height } = getTableDimensions(newTable.value.capacity, newTable.value.shape)
     await api.post(`/rooms/${selectedRoomId.value}/tables`, {
@@ -359,7 +363,9 @@ async function addTable() {
     })
     newTable.value = { name: '', capacity: 2, shape: 'RECTANGLE' }
     await restaurantStore.fetchOne(restaurantId.value)
-  } catch (e) { console.error(e) }
+  } catch (e: any) {
+    addTableError.value = e.response?.data?.message ?? 'Erreur lors de la création'
+  }
 }
 
 function askDeleteTable(tableId: string, tableName: string) {

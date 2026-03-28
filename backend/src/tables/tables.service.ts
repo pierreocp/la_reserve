@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RoomsService } from '../rooms/rooms.service';
 import { UpsertTableDto } from './dto/upsert-table.dto';
@@ -17,6 +17,7 @@ export class TablesService {
 
   async create(roomId: string, dto: UpsertTableDto, userId: string) {
     await this.roomsService.findOne(roomId, userId);
+    await this.assertNameUnique(roomId, dto.name);
     return this.prisma.table.create({ data: { ...dto, roomId } });
   }
 
@@ -24,7 +25,17 @@ export class TablesService {
     const table = await this.prisma.table.findUnique({ where: { id }, include: { room: true } });
     if (!table) throw new NotFoundException('Table not found');
     await this.roomsService.findOne(table.roomId, userId);
+    if (dto.name && dto.name !== table.name) {
+      await this.assertNameUnique(table.roomId, dto.name, id);
+    }
     return this.prisma.table.update({ where: { id }, data: dto });
+  }
+
+  private async assertNameUnique(roomId: string, name: string, excludeId?: string) {
+    const existing = await this.prisma.table.findFirst({
+      where: { roomId, name: { equals: name, mode: 'insensitive' }, ...(excludeId && { NOT: { id: excludeId } }) },
+    });
+    if (existing) throw new ConflictException(`Une table nommée "${name}" existe déjà dans cette salle`);
   }
 
   // Bulk update positions after drag-drop in floor plan editor
