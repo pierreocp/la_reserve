@@ -66,23 +66,13 @@
               </div>
 
               <!-- ── Table(s) ── -->
-              <div v-if="availableTables.length">
+              <div v-if="rooms.length">
                 <label class="label">Table(s)</label>
-                <div class="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto pr-1">
-                  <button
-                    v-for="t in availableTables"
-                    :key="t.id"
-                    type="button"
-                    @click="toggleTable(t.id)"
-                    class="flex items-center justify-between px-3 py-1.5 rounded-lg border text-sm transition-colors"
-                    :class="form.tableIds.includes(t.id)
-                      ? 'bg-brand-500/20 border-brand-500/50 text-brand-300'
-                      : 'bg-slate-700/40 border-slate-600 text-slate-300 hover:border-slate-500'"
-                  >
-                    <span class="font-medium">{{ t.name }}</span>
-                    <span class="text-xs text-slate-500 ml-2">{{ t.capacity }}p</span>
-                  </button>
-                </div>
+                <TableFloorPicker
+                  v-model="form.tableIds"
+                  :rooms="rooms"
+                  :busy-table-ids="busyTableIds"
+                />
               </div>
             </div>
 
@@ -171,13 +161,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import dayjs from 'dayjs'
 import { api } from '@/lib/api'
 import { useBookingsStore } from '@/stores/bookings'
 import { useRestaurantStore } from '@/stores/restaurant'
-import type { Booking, Customer, Table } from '@/types'
+import type { Booking, Customer } from '@/types'
 import { BOOKING_STATUS_LABELS } from '@/types'
+import TableFloorPicker from '@/components/floorplan/TableFloorPicker.vue'
 
 const props = defineProps<{
   restaurantId: string
@@ -199,8 +190,18 @@ const customerResults = ref<Customer[]>([])
 const showSuggestions = ref(false)
 let searchTimer: ReturnType<typeof setTimeout>
 
-// Available tables (all tables across rooms)
-const availableTables = ref<Table[]>([])
+// Rooms + busy tables for floor picker
+const rooms = computed(() => restaurantStore.current?.rooms ?? [])
+const busyTableIds = computed(() => {
+  // Collect tableIds from bookings on the same date/period, excluding current booking
+  return bookingsStore.list
+    .filter((b) =>
+      b.id !== props.booking?.id &&
+      dayjs(b.date).format('YYYY-MM-DD') === form.date &&
+      b.period === form.period,
+    )
+    .flatMap((b) => b.bookingTables?.map((bt) => bt.tableId) ?? [])
+})
 
 const form = reactive({
   date: props.initialDate || dayjs().format('YYYY-MM-DD'),
@@ -243,12 +244,6 @@ watch(
   { immediate: true },
 )
 
-// Load all tables from the restaurant rooms
-onMounted(async () => {
-  const rooms = restaurantStore.current?.rooms || []
-  availableTables.value = rooms.flatMap((r) => r.tables || [])
-})
-
 function updateTimes() {
   if (form.period === 'LUNCH') {
     form.startTime = '12:30'
@@ -257,12 +252,6 @@ function updateTimes() {
     form.startTime = '19:30'
     form.endTime = '21:30'
   }
-}
-
-function toggleTable(tableId: string) {
-  const idx = form.tableIds.indexOf(tableId)
-  if (idx === -1) form.tableIds.push(tableId)
-  else form.tableIds.splice(idx, 1)
 }
 
 // Customer search autocomplete
