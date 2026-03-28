@@ -1,0 +1,14 @@
+{
+  "name": "la-reserve",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
+    "build": "pnpm --filter backend build && pnpm --filter frontend build",
+    "db:up": "docker-compose up -d postgres",
+    "db:migrate": "pnpm --filter backend prisma:migrate",
+    "db:studio": "pnpm --filter backend prisma:studio"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

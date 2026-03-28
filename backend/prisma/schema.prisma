@@ -1,0 +1,252 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────
+
+enum UserRole {
+  OWNER
+  MANAGER
+  STAFF
+}
+
+enum BookingStatus {
+  RESERVED
+  CONFIRMED
+  ARRIVED
+  SEATED
+  DONE
+  CANCELLED
+  NO_SHOW
+  WAITING
+}
+
+enum BookingPeriod {
+  LUNCH
+  DINNER
+}
+
+enum TableShape {
+  RECTANGLE
+  SQUARE
+  CIRCLE
+}
+
+enum Gender {
+  M
+  F
+  OTHER
+}
+
+enum CustomerStatus {
+  REGULAR
+  VIP
+  BLACKLISTED
+}
+
+// ─────────────────────────────────────────
+// Users & Auth
+// ─────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurantUsers RestaurantUser[]
+}
+
+// ─────────────────────────────────────────
+// Restaurants
+// ─────────────────────────────────────────
+
+model Restaurant {
+  id           String   @id @default(cuid())
+  name         String
+  address      String?
+  city         String?
+  zipCode      String?
+  phone        String?
+  email        String?
+  logoUrl      String?
+  // JSON: { monday: { lunch: { open: "12:00", close: "14:30" }, dinner: { open: "19:00", close: "22:30" } }, ... }
+  openingHours Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurantUsers     RestaurantUser[]
+  rooms               Room[]
+  restaurantCustomers RestaurantCustomer[]
+  staff               Staff[]
+  bookings            Booking[]
+  serviceNotes        ServiceNote[]
+}
+
+model RestaurantUser {
+  id           String     @id @default(cuid())
+  role         UserRole   @default(STAFF)
+  userId       String
+  restaurantId String
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, restaurantId])
+}
+
+// ─────────────────────────────────────────
+// Rooms (salles)
+// ─────────────────────────────────────────
+
+model Room {
+  id           String   @id @default(cuid())
+  name         String
+  floor        Int      @default(0) // 0 = RDC, 1 = 1er étage, etc.
+  canvasWidth  Int      @default(1200)
+  canvasHeight Int      @default(800)
+  isActive     Boolean  @default(true)
+  restaurantId String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  tables     Table[]
+}
+
+// ─────────────────────────────────────────
+// Tables
+// ─────────────────────────────────────────
+
+model Table {
+  id           String     @id @default(cuid())
+  name         String
+  capacity     Int
+  minCapacity  Int        @default(1)
+  // 2D floor plan position
+  x            Float      @default(100)
+  y            Float      @default(100)
+  width        Float      @default(80)
+  height       Float      @default(80)
+  rotation     Float      @default(0)
+  shape        TableShape @default(RECTANGLE)
+  isCombinable Boolean    @default(false)
+  roomId       String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  room          Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  bookingTables BookingTable[]
+}
+
+// ─────────────────────────────────────────
+// Customers
+// ─────────────────────────────────────────
+
+model Customer {
+  id        String         @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  vip       Boolean        @default(false)
+  gender    Gender?
+  status    CustomerStatus @default(REGULAR)
+  notes     String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  restaurantCustomers RestaurantCustomer[]
+  bookings            Booking[]
+}
+
+model RestaurantCustomer {
+  id           String @id @default(cuid())
+  restaurantId String
+  customerId   String
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, customerId])
+}
+
+// ─────────────────────────────────────────
+// Staff
+// ─────────────────────────────────────────
+
+model Staff {
+  id           String   @id @default(cuid())
+  name         String
+  color        String   @default("#6366f1") // indigo-500 par défaut
+  restaurantId String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  bookings   Booking[]
+}
+
+// ─────────────────────────────────────────
+// Bookings
+// ─────────────────────────────────────────
+
+model Booking {
+  id                String        @id @default(cuid())
+  date              DateTime      @db.Date
+  startTime         String // "12:30"
+  endTime           String // "14:00"
+  period            BookingPeriod
+  pax               Int
+  status            BookingStatus @default(RESERVED)
+  notes             String?
+  waitingList       Boolean       @default(false)
+  confirmationToken String?       @unique
+  restaurantId      String
+  customerId        String
+  staffId           String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  customer      Customer       @relation(fields: [customerId], references: [id])
+  staff         Staff?         @relation(fields: [staffId], references: [id])
+  bookingTables BookingTable[]
+}
+
+model BookingTable {
+  id        String @id @default(cuid())
+  bookingId String
+  tableId   String
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  table   Table   @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, tableId])
+}
+
+// ─────────────────────────────────────────
+// Service Notes (notes de service par jour)
+// ─────────────────────────────────────────
+
+model ServiceNote {
+  id           String        @id @default(cuid())
+  date         DateTime      @db.Date
+  period       BookingPeriod?
+  content      String
+  restaurantId String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+}
