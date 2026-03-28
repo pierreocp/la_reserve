@@ -1,98 +1,89 @@
 <template>
   <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="$emit('close')">
-    <div class="card w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div class="card w-full max-w-3xl max-h-[90vh] flex flex-col">
+
       <!-- Header -->
       <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between shrink-0">
         <h3 class="text-lg font-semibold text-slate-100">
           {{ booking ? 'Modifier la réservation' : 'Nouvelle réservation' }}
         </h3>
         <button @click="$emit('close')" class="btn-ghost p-1.5">
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
       </div>
 
       <!-- Body -->
-      <div class="overflow-y-auto flex-1 px-6 py-4">
-        <form @submit.prevent="handleSubmit" id="booking-form">
-          <div class="grid grid-cols-2 gap-x-6 gap-y-4">
+      <div class="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+        <form @submit.prevent="handleSubmit" id="booking-form" class="space-y-5">
 
-            <!-- ── Colonne gauche : réservation ── -->
-            <div class="space-y-4">
-              <div>
-                <label class="label">Date *</label>
-                <input v-model="form.date" type="date" class="input" required />
-              </div>
+          <!-- ── Ligne 1 : infos essentielles ── -->
+          <div class="grid grid-cols-[1fr_72px_100px_100px_1fr] gap-3 items-end">
+            <div>
+              <label class="label">Date *</label>
+              <input v-model="form.date" type="date" class="input" required />
+            </div>
+            <div>
+              <label class="label">Couverts *</label>
+              <input v-model.number="form.pax" type="number" min="1" max="99" class="input text-center" required />
+            </div>
+            <div>
+              <label class="label">Début</label>
+              <input v-model="form.startTime" type="time" class="input" required />
+            </div>
+            <div>
+              <label class="label">Fin</label>
+              <input v-model="form.endTime" type="time" class="input" required />
+            </div>
+            <div>
+              <label class="label">Statut</label>
+              <select v-model="form.status" class="input">
+                <option v-for="(lbl, val) in BOOKING_STATUS_LABELS" :key="val" :value="val">{{ lbl }}</option>
+              </select>
+            </div>
+          </div>
 
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="label">Période *</label>
-                  <select v-model="form.period" class="input" @change="updateTimes">
-                    <option value="LUNCH">☀️ Midi</option>
-                    <option value="DINNER">🌙 Soir</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="label">Couverts *</label>
-                  <input v-model.number="form.pax" type="number" min="1" max="99" class="input" required />
-                </div>
-              </div>
+          <!-- ── Ligne 2 : période déduite + liste d'attente ── -->
+          <div class="flex items-center gap-4">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+              :class="period === 'LUNCH' ? 'bg-amber-500/15 text-amber-300' : 'bg-indigo-500/15 text-indigo-300'">
+              {{ period === 'LUNCH' ? '☀️ Service du midi' : '🌙 Service du soir' }}
+            </span>
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input v-model="form.waitingList" type="checkbox" class="w-4 h-4 accent-brand-500" />
+              <span class="text-sm text-slate-300">Liste d'attente</span>
+            </label>
+          </div>
 
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="label">Heure début</label>
-                  <input v-model="form.startTime" type="time" class="input" required />
-                </div>
-                <div>
-                  <label class="label">Heure fin</label>
-                  <input v-model="form.endTime" type="time" class="input" required />
-                </div>
-              </div>
+          <!-- ── Zone centrale : table | client ── -->
+          <div class="grid gap-x-6" :class="rooms.length ? 'grid-cols-2' : 'grid-cols-1'">
 
-              <div>
-                <label class="label">Statut</label>
-                <select v-model="form.status" class="input">
-                  <option v-for="(label, value) in BOOKING_STATUS_LABELS" :key="value" :value="value">{{ label }}</option>
-                </select>
-              </div>
-
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input v-model="form.waitingList" type="checkbox" class="w-4 h-4 accent-brand-500" />
-                <span class="text-sm text-slate-300">Liste d'attente</span>
-              </label>
-
-              <div>
-                <label class="label">Notes</label>
-                <textarea v-model="form.notes" class="input resize-none" rows="3" placeholder="Allergies, occasions spéciales..."></textarea>
-              </div>
-
-              <!-- ── Table(s) ── -->
-              <div v-if="rooms.length">
-                <label class="label">Table(s)</label>
-                <TableFloorPicker
-                  v-model="form.tableIds"
-                  :rooms="rooms"
-                  :busy-table-ids="busyTableIds"
-                />
-              </div>
+            <!-- Tables -->
+            <div v-if="rooms.length" class="space-y-2">
+              <label class="label">Table(s)</label>
+              <TableFloorPicker
+                v-model="form.tableIds"
+                :rooms="rooms"
+                :busy-table-ids="busyTableIds"
+              />
             </div>
 
-            <!-- ── Colonne droite : client ── -->
-            <div class="space-y-4">
-              <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-1">Client</div>
+            <!-- Client -->
+            <div class="space-y-3">
+              <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Client</div>
 
-              <!-- Recherche client existant -->
+              <!-- Autocomplete -->
               <div class="relative" ref="searchRef">
-                <label class="label">Rechercher un client existant</label>
                 <input
                   v-model="customerSearch"
                   type="text"
                   class="input"
-                  placeholder="Nom, prénom, téléphone..."
+                  placeholder="Rechercher un client existant..."
                   autocomplete="off"
                   @input="onCustomerSearch"
                   @focus="showSuggestions = customerResults.length > 0"
                 />
-                <!-- Dropdown suggestions -->
                 <div
                   v-if="showSuggestions && customerResults.length"
                   class="absolute z-10 left-0 right-0 mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl overflow-hidden"
@@ -118,32 +109,36 @@
                 </div>
               </div>
 
-              <div class="border-t border-slate-700 pt-3 space-y-3">
-                <div class="grid grid-cols-2 gap-3">
-                  <div>
-                    <label class="label">Prénom *</label>
-                    <input v-model="form.customerFirstName" type="text" class="input" required />
-                  </div>
-                  <div>
-                    <label class="label">Nom</label>
-                    <input v-model="form.customerLastName" type="text" class="input" />
-                  </div>
-                </div>
-
+              <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="label">Téléphone</label>
-                  <input v-model="form.customerPhone" type="tel" class="input" placeholder="06 12 34 56 78" />
+                  <label class="label">Prénom *</label>
+                  <input v-model="form.customerFirstName" type="text" class="input" required />
                 </div>
-
                 <div>
-                  <label class="label">Email</label>
-                  <input v-model="form.customerEmail" type="email" class="input" placeholder="client@exemple.com" />
+                  <label class="label">Nom</label>
+                  <input v-model="form.customerLastName" type="text" class="input" />
                 </div>
+              </div>
+
+              <div>
+                <label class="label">Téléphone</label>
+                <input v-model="form.customerPhone" type="tel" class="input" placeholder="06 12 34 56 78" />
+              </div>
+
+              <div>
+                <label class="label">Email</label>
+                <input v-model="form.customerEmail" type="email" class="input" placeholder="client@exemple.com" />
               </div>
             </div>
           </div>
 
-          <div v-if="error" class="mt-4 text-sm text-red-400 bg-red-900/20 border border-red-800/30 rounded-lg px-3 py-2">
+          <!-- ── Notes full width ── -->
+          <div>
+            <label class="label">Notes</label>
+            <textarea v-model="form.notes" class="input resize-none" rows="2" placeholder="Allergies, occasion spéciale, préférences..."></textarea>
+          </div>
+
+          <div v-if="error" class="text-sm text-red-400 bg-red-900/20 border border-red-800/30 rounded-lg px-3 py-2">
             {{ error }}
           </div>
         </form>
@@ -190,22 +185,8 @@ const customerResults = ref<Customer[]>([])
 const showSuggestions = ref(false)
 let searchTimer: ReturnType<typeof setTimeout>
 
-// Rooms + busy tables for floor picker
-const rooms = computed(() => restaurantStore.current?.rooms ?? [])
-const busyTableIds = computed(() => {
-  // Collect tableIds from bookings on the same date/period, excluding current booking
-  return (bookingsStore.list ?? [])
-    .filter((b) =>
-      b.id !== props.booking?.id &&
-      dayjs(b.date).format('YYYY-MM-DD') === form.date &&
-      b.period === form.period,
-    )
-    .flatMap((b) => b.bookingTables?.map((bt) => bt.tableId) ?? [])
-})
-
 const form = reactive({
   date: props.initialDate || dayjs().format('YYYY-MM-DD'),
-  period: 'DINNER' as 'LUNCH' | 'DINNER',
   pax: 2,
   startTime: '19:30',
   endTime: '21:30',
@@ -220,13 +201,29 @@ const form = reactive({
   tableIds: [] as string[],
 })
 
+// Période déduite de l'heure de début (pas de saisie manuelle)
+const period = computed<'LUNCH' | 'DINNER'>(() =>
+  form.startTime < '16:00' ? 'LUNCH' : 'DINNER',
+)
+
+// Rooms + busy tables for floor picker
+const rooms = computed(() => restaurantStore.current?.rooms ?? [])
+const busyTableIds = computed(() =>
+  (bookingsStore.list ?? [])
+    .filter((b) =>
+      b.id !== props.booking?.id &&
+      dayjs(b.date).format('YYYY-MM-DD') === form.date &&
+      b.period === period.value,
+    )
+    .flatMap((b) => b.bookingTables?.map((bt) => bt.tableId) ?? []),
+)
+
 // Populate form when editing
 watch(
   () => props.booking,
   (b) => {
     if (b) {
       form.date = dayjs(b.date).format('YYYY-MM-DD')
-      form.period = b.period
       form.pax = b.pax
       form.startTime = b.startTime
       form.endTime = b.endTime
@@ -243,16 +240,6 @@ watch(
   },
   { immediate: true },
 )
-
-function updateTimes() {
-  if (form.period === 'LUNCH') {
-    form.startTime = '12:30'
-    form.endTime = '14:30'
-  } else {
-    form.startTime = '19:30'
-    form.endTime = '21:30'
-  }
-}
 
 // Customer search autocomplete
 function onCustomerSearch() {
@@ -285,7 +272,6 @@ function selectCustomer(c: Customer) {
   showSuggestions.value = false
 }
 
-// Close suggestions on outside click
 function handleOutsideClick(e: MouseEvent) {
   if (searchRef.value && !searchRef.value.contains(e.target as Node)) {
     showSuggestions.value = false
@@ -298,8 +284,7 @@ async function handleSubmit() {
   saving.value = true
   error.value = ''
   try {
-    const payload = { ...form }
-    // Don't send customerId if we're creating inline
+    const payload = { ...form, period: period.value }
     if (!form.customerId) delete payload.customerId
     if (props.booking) {
       await bookingsStore.update(props.restaurantId, props.booking.id, payload)
