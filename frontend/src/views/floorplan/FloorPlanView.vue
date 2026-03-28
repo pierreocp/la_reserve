@@ -118,6 +118,7 @@ import { useRestaurantStore } from '@/stores/restaurant'
 import { useBookingsStore } from '@/stores/bookings'
 import type { Table, Room } from '@/types'
 import FloorPlanCanvas from '@/components/floorplan/FloorPlanCanvas.vue'
+import { getTableDimensions } from '@/utils/tableSize'
 import dayjs from 'dayjs'
 
 const route = useRoute()
@@ -156,12 +157,15 @@ watch(mode, (m) => {
 async function addTable() {
   if (!selectedRoomId.value || !newTable.value.name) return
   try {
+    const { width, height } = getTableDimensions(newTable.value.capacity, newTable.value.shape)
     await api.post(`/rooms/${selectedRoomId.value}/tables`, {
       name: newTable.value.name,
       capacity: newTable.value.capacity,
       shape: newTable.value.shape,
-      x: 100 + Math.random() * 400,
-      y: 100 + Math.random() * 200,
+      width,
+      height,
+      x: 80 + Math.random() * 500,
+      y: 80 + Math.random() * 300,
     })
     newTable.value = { name: '', capacity: 2, shape: 'RECTANGLE' }
     await restaurantStore.fetchOne(restaurantId.value)
