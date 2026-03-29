@@ -209,7 +209,7 @@ const period = computed<'LUNCH' | 'DINNER'>(() =>
 // Rooms + busy tables for floor picker
 const rooms = computed(() => restaurantStore.current?.rooms ?? [])
 const busyTableIds = computed(() =>
-  (bookingsStore.list ?? [])
+  (bookingsStore.bookings ?? [])
     .filter((b) =>
       b.id !== props.booking?.id &&
       dayjs(b.date).format('YYYY-MM-DD') === form.date &&

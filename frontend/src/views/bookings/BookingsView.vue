@@ -100,8 +100,8 @@ const totalCovers = computed(() =>
 )
 
 const periodOptions = computed(() => [
-  { value: 'LUNCH', label: 'Midi', icon: '☀️', count: bookingsStore.bookings.filter((b) => b.period === 'LUNCH').length },
-  { value: 'DINNER', label: 'Soir', icon: '🌙', count: bookingsStore.bookings.filter((b) => b.period === 'DINNER').length },
+  { value: 'LUNCH' as BookingPeriod, label: 'Midi', icon: '☀️', count: bookingsStore.bookings.filter((b) => b.period === 'LUNCH').length },
+  { value: 'DINNER' as BookingPeriod, label: 'Soir', icon: '🌙', count: bookingsStore.bookings.filter((b) => b.period === 'DINNER').length },
 ])
 
 watch(

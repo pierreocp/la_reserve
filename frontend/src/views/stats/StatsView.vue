@@ -49,7 +49,7 @@
           </thead>
           <tbody class="divide-y divide-slate-700/50">
             <tr v-for="(day, date) in stats.byDate" :key="date" class="hover:bg-slate-700/30">
-              <td class="px-4 py-2 text-slate-300 capitalize">{{ formatDate(date) }}</td>
+              <td class="px-4 py-2 text-slate-300 capitalize">{{ formatDate(String(date)) }}</td>
               <td class="px-4 py-2 text-right text-amber-400">{{ day.lunch || '—' }}</td>
               <td class="px-4 py-2 text-right text-indigo-400">{{ day.dinner || '—' }}</td>
               <td class="px-4 py-2 text-right text-slate-100 font-medium">{{ (day.lunch || 0) + (day.dinner || 0) }}</td>
