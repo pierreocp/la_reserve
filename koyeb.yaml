@@ -1,0 +1,35 @@
+# Configuration Koyeb — La Réserve (backend NestJS)
+# Utilisé avec le CLI Koyeb : koyeb deploy
+# Doc : https://www.koyeb.com/docs/reference/koyeb-yaml
+
+name: la-reserve
+
+services:
+  - name: api
+    type: web
+    git:
+      repository: github.com/pierreocp/la_reserve
+      branch: main
+      dockerfile: backend/Dockerfile
+      build_context: /         # racine du monorepo (nécessaire pour pnpm workspaces)
+    instance_types:
+      - type: nano              # free tier (512MB RAM, 0.1 vCPU)
+    scalings:
+      - min: 1                  # toujours 1 instance active → pas de cold start
+        max: 1
+    ports:
+      - port: 3000
+        protocol: http
+    health_checks:
+      - path: /api
+        port: 3000
+        protocol: http
+    regions:
+      - fra                     # Frankfurt — datacenter le plus proche pour la France
+    env:
+      - key: PORT
+        value: "3000"
+      - key: NODE_ENV
+        value: production
+      # Variables secrètes à définir dans le dashboard Koyeb (pas ici) :
+      # DATABASE_URL, JWT_SECRET, CORS_ORIGIN

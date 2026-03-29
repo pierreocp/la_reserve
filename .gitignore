@@ -1,14 +1,39 @@
-!.keep
-*.DS_Store
-*.swo
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.output/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor
+.vscode/
+.idea/
 *.swp
-/.bundle
-/.foreman
-/log/*
-/public/system
-/public/assets
-/tags
-/tmp/*
-/config/application.yml
-# Ignore application configuration
-/config/application.yml
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Prisma
+backend/prisma/*.db
+backend/prisma/*.db-journal
+
+# Cache
+.cache/
+*.tsbuildinfo
+
+# Test coverage
+coverage/
