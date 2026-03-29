@@ -1,8 +1,8 @@
 FROM node:20-alpine
 WORKDIR /app
 
-# Active pnpm via corepack (inclus dans Node 20)
-RUN corepack enable
+# OpenSSL requis par Prisma + corepack pour pnpm
+RUN apk add --no-cache openssl && corepack enable
 
 # Copie les manifestes du workspace en premier (cache Docker)
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
