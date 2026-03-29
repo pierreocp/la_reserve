@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # ── Base de données ──────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: la_reserve_db
@@ -13,6 +14,11 @@ services:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -25,6 +31,38 @@ services:
       - '5050:80'
     depends_on:
       - postgres
+
+  # ── Stack complète (test déploiement) ────────────────────────────────────────
+  # Lancer avec : docker-compose --profile stack up --build
+  # Frontend : http://localhost:8080   (ne bloque pas le dev sur :5173)
+  # Backend  : http://localhost:3001   (ne bloque pas le dev sur :3000)
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    profiles: ['stack']
+    ports:
+      - '3001:3000'
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/la_reserve
+      JWT_SECRET: dev-secret-docker
+      CORS_ORIGIN: http://localhost:8080
+      PORT: '3000'
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    profiles: ['stack']
+    ports:
+      - '8080:80'
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

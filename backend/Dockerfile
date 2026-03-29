@@ -17,7 +17,11 @@ COPY backend ./backend
 # Génère le client Prisma et compile TypeScript
 RUN cd backend && pnpm prisma generate && pnpm build
 
+# Script de démarrage (migration + lancement)
+COPY backend/entrypoint.sh ./backend/entrypoint.sh
+RUN chmod +x backend/entrypoint.sh
+
 EXPOSE 3000
 ENV NODE_ENV=production
 
-CMD ["node", "backend/dist/main.js"]
+CMD ["./backend/entrypoint.sh"]
